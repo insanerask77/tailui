@@ -158,6 +158,6 @@ export const policy = {
 const ONLINE_THRESHOLD_MS = 3 * 60 * 1000;
 
 export function isOnline(node: HsNode): boolean {
-  if (!node.last_seen) return false;
-  return Date.now() - new Date(node.last_seen).getTime() < ONLINE_THRESHOLD_MS;
+  if (!node.lastSeen) return false;
+  return Date.now() - new Date(node.lastSeen).getTime() < ONLINE_THRESHOLD_MS;
 }

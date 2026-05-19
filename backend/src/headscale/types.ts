@@ -1,22 +1,22 @@
 export interface HsUser {
   id: string;
   name: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface HsNode {
   id: string;
   name: string;
-  given_name: string;
+  givenName: string;
   user: HsUser;
-  last_seen: string;        // RFC3339
+  lastSeen: string;         // RFC3339
   expiry: string;           // RFC3339
-  ip_addresses: string[];
-  register_method: string;
-  valid_tags: string[];
-  invalid_tags: string[];
-  forced_tags: string[];
-  created_at: string;
+  ipAddresses: string[];
+  registerMethod: string;
+  validTags: string[];
+  invalidTags: string[];
+  forcedTags: string[];
+  createdAt: string;
   online: boolean;
 }
 
@@ -38,18 +38,18 @@ export interface HsRoute {
   prefix: string;
   advertised: boolean;
   enabled: boolean;
-  is_primary: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string;
+  isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface HsApiKey {
   id: string;
   prefix: string;
   expiration: string;
-  created_at: string;
-  last_seen_at?: string;
+  createdAt: string;
+  lastSeen?: string;
 }
 
 export interface HsDnsConfig {

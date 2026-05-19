@@ -84,7 +84,7 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
 
   if (!node) return null;
 
-  const allTags = [...new Set([...node.valid_tags, ...node.forced_tags])];
+  const allTags = [...new Set([...node.validTags, ...node.forcedTags])];
 
   return (
     <>
@@ -128,17 +128,17 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
             ) : (
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-semibold text-white truncate">
-                  {node.given_name || node.name}
+                  {node.givenName || node.name}
                 </h2>
                 <button
-                  onClick={() => { setNameInput(node.given_name || node.name); setEditingName(true); }}
+                  onClick={() => { setNameInput(node.givenName || node.name); setEditingName(true); }}
                   className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
                 >
                   <Edit2 size={13} />
                 </button>
               </div>
             )}
-            {node.given_name && node.given_name !== node.name && (
+            {node.givenName && node.givenName !== node.name && (
               <p className="text-xs text-gray-500 mt-0.5">{node.name}</p>
             )}
           </div>
@@ -163,10 +163,10 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">IP Addresses</p>
             <div className="space-y-1">
-              {node.ip_addresses.map((ip) => (
+              {node.ipAddresses.map((ip) => (
                 <p key={ip} className="font-mono text-sm text-white">{ip}</p>
               ))}
-              {node.ip_addresses.length === 0 && <p className="text-sm text-gray-500">—</p>}
+              {node.ipAddresses.length === 0 && <p className="text-sm text-gray-500">—</p>}
             </div>
           </div>
 
@@ -224,9 +224,9 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Last seen</p>
               <div className="flex items-center gap-1.5">
                 <Clock size={13} className="text-gray-400" />
-                <span className="text-sm text-white">{reltime(node.last_seen)}</span>
+                <span className="text-sm text-white">{reltime(node.lastSeen)}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">{fmt(node.last_seen)}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{fmt(node.lastSeen)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Expiry</p>

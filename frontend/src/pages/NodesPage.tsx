@@ -2,9 +2,10 @@ import { useState, useMemo } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Search, Wifi, WifiOff, AlertCircle, Clock, Tag,
-  MoreVertical, Trash2, Timer, ChevronDown,
+  MoreVertical, Trash2, Timer, ChevronDown, ArrowUpRight,
 } from 'lucide-react';
 import { useNodes, useUsers, type NodeRow } from '../api/nodes';
+import { useRoutes, useExitNodeIds } from '../api/routes';
 import { Skeleton } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { NodeDetailDrawer } from '../components/NodeDetailDrawer';
@@ -121,6 +122,8 @@ export default function NodesPage() {
   const qc = useQueryClient();
   const { data: nodes, isLoading, isError, error } = useNodes();
   const { data: users = [] } = useUsers();
+  const { data: routes } = useRoutes();
+  const exitNodeIds = useExitNodeIds(routes);
 
   const [search, setSearch]           = useState('');
   const [statusFilter, setStatus]     = useState<StatusFilter>('all');
@@ -171,9 +174,9 @@ export default function NodesPage() {
       if (userFilter !== 'all' && n.user.name !== userFilter)       return false;
       if (search) {
         const q = search.toLowerCase();
-        if (!n.given_name.toLowerCase().includes(q) &&
+        if (!n.givenName.toLowerCase().includes(q) &&
             !n.name.toLowerCase().includes(q) &&
-            !n.ip_addresses.some((ip) => ip.includes(q))) return false;
+            !n.ipAddresses.some((ip) => ip.includes(q))) return false;
       }
       return true;
     });
@@ -335,13 +338,21 @@ export default function NodesPage() {
                 </td>
                 <td className="px-4 py-3.5"><StatusBadge node={node} /></td>
                 <td className="px-4 py-3.5">
-                  <div className="font-medium text-white">{node.given_name || node.name}</div>
-                  {node.given_name && node.given_name !== node.name && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-white">{node.givenName || node.name}</span>
+                    {exitNodeIds.has(node.id) && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs
+                                       bg-purple-950 text-purple-300 border border-purple-800">
+                        <ArrowUpRight size={9} /> Exit
+                      </span>
+                    )}
+                  </div>
+                  {node.givenName && node.givenName !== node.name && (
                     <div className="text-xs text-gray-500">{node.name}</div>
                   )}
-                  {[...node.valid_tags, ...node.forced_tags].length > 0 && (
+                  {[...node.validTags, ...node.forcedTags].length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {[...node.valid_tags, ...node.forced_tags].map((t) => (
+                      {[...node.validTags, ...node.forcedTags].map((t) => (
                         <span key={t} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs
                                                  bg-blue-950 text-blue-300 border border-blue-800">
                           <Tag size={9} />{t.replace('tag:', '')}
@@ -351,13 +362,13 @@ export default function NodesPage() {
                   )}
                 </td>
                 <td className="px-4 py-3.5 font-mono text-xs text-gray-300">
-                  {node.ip_addresses[0] ?? '—'}
-                  {node.ip_addresses[1] && <div className="text-gray-500">{node.ip_addresses[1]}</div>}
+                  {node.ipAddresses[0] ?? '—'}
+                  {node.ipAddresses[1] && <div className="text-gray-500">{node.ipAddresses[1]}</div>}
                 </td>
                 <td className="px-4 py-3.5 text-gray-300">{node.user.name}</td>
                 <td className="px-4 py-3.5 text-gray-400">
                   <span className="inline-flex items-center gap-1">
-                    <Clock size={12} />{reltime(node.last_seen)}
+                    <Clock size={12} />{reltime(node.lastSeen)}
                   </span>
                 </td>
                 <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>

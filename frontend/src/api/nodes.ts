@@ -10,15 +10,15 @@ export interface NodeUser {
 export interface NodeRow {
   id: string;
   name: string;
-  given_name: string;
+  givenName: string;
   user: NodeUser;
-  last_seen: string;
+  lastSeen: string;
   expiry: string;
-  ip_addresses: string[];
+  ipAddresses: string[];
   online: boolean;
   expired: boolean;
-  valid_tags: string[];
-  forced_tags: string[];
+  validTags: string[];
+  forcedTags: string[];
 }
 
 async function fetchNodes(): Promise<NodeRow[]> {

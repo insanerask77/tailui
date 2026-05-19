@@ -12,6 +12,7 @@ import NodesPage from './pages/NodesPage';
 import UsersPage from './pages/UsersPage';
 import AuthKeysPage from './pages/AuthKeysPage';
 import ApiKeysPage from './pages/ApiKeysPage';
+import RoutesPage from './pages/RoutesPage';
 import { useAuthStore } from './stores/authStore';
 
 const rootRoute = createRootRoute({
@@ -78,7 +79,7 @@ const apikeysRoute = createRoute({
 const routesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/routes',
-  component: () => <ComingSoon name="Routes" />,
+  component: RoutesPage,
 });
 const dnsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
