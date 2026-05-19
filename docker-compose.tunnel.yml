@@ -1,0 +1,34 @@
+# Cloudflare Tunnel overlay — use when you don't have a VPS or domain
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+#                  -f docker-compose.tunnel.yml up -d
+#
+# Prerequisites (one-time in Cloudflare Zero Trust dashboard):
+#   1. Networks → Tunnels → Create a tunnel → copy the token → CF_TUNNEL_TOKEN in .env
+#   2. Add two public hostnames in the tunnel:
+#        hs.yourdomain.com    → Service: http://headscale:8080  (enable WebSocket support)
+#        admin.yourdomain.com → Service: http://tailui-frontend:80
+#   3. Make sure "No TLS Verify" is OFF (we're using plain HTTP internally)
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN}
+    networks:
+      - hs-net
+    depends_on:
+      tailui-backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.2"
+
+  # Remove direct host port — cloudflared reaches frontend via Docker network
+  tailui-frontend:
+    ports: !reset []

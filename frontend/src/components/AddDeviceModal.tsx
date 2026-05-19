@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Copy, Check, Monitor, Apple, Terminal, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Copy, Check, Monitor, Apple, Terminal, ChevronRight, Loader2, Smartphone } from 'lucide-react';
 import { useUsers } from '../api/users';
 import { useCreateAuthKey } from '../api/authkeys';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Platform = 'linux' | 'macos' | 'windows';
+type Platform = 'linux' | 'macos' | 'windows' | 'mobile';
 
 interface HeadscaleConfig {
   headscaleUrl: string;
@@ -108,6 +108,73 @@ function dockerCommand(loginServer: string, authKey: string) {
   sh -c "tailscaled --tun=userspace-networking & sleep 2 && tailscale up --login-server ${loginServer} --authkey ${authKey}"`;
 }
 
+function MobileInstructions({ loginServer }: { loginServer: string }) {
+  return (
+    <div className="space-y-6">
+      {/* Note about mobile + pre-auth keys */}
+      <div className="bg-amber-950/40 border border-amber-700/50 rounded-lg p-3 text-xs text-amber-300 leading-relaxed">
+        <strong>Note:</strong> The mobile Tailscale app uses browser-based login — pre-auth keys are
+        not entered directly in the app. Your device will appear as <em>pending</em> in TailUI and
+        must be approved by an admin, or you can provide an auth key via the web view that opens.
+      </div>
+
+      {/* iOS */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Apple className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-white">iOS</span>
+        </div>
+        <ol className="space-y-2 text-sm text-gray-300 list-none">
+          {[
+            'Install Tailscale from the App Store.',
+            'Open the app → tap the account icon (top right) → Settings.',
+            'Tap Custom control server.',
+            <>Enter your Headscale URL: <code className="font-mono text-teal-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">{loginServer}</code> → tap Save.</>,
+            'The app restarts — tap Log in. A browser window opens.',
+            'The browser shows a registration URL — share it with an admin, or the admin approves the device from TailUI → Nodes.',
+            'Back in the app, tap Connect. Done.',
+          ].map((text, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-700 text-gray-400 text-xs flex items-center justify-center font-mono">{i + 1}</span>
+              <span className="leading-relaxed">{text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="border-t border-gray-700" />
+
+      {/* Android */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Smartphone className="w-4 h-4 text-gray-400" />
+          <span className="text-sm font-medium text-white">Android</span>
+        </div>
+        <ol className="space-y-2 text-sm text-gray-300 list-none">
+          {[
+            'Install Tailscale from Google Play (or F-Droid for open-source build).',
+            'Open the app → tap the ⋮ menu (top right) → Use custom control server.',
+            <>Enter: <code className="font-mono text-teal-300 bg-gray-800 px-1.5 py-0.5 rounded text-xs">{loginServer}</code> → tap Save.</>,
+            'Tap Sign in. A browser opens with a registration URL.',
+            'An admin approves the device from TailUI → Nodes (or from the registration URL).',
+            'Back in the app, tap Connect. Done.',
+          ].map((text, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-700 text-gray-400 text-xs flex items-center justify-center font-mono">{i + 1}</span>
+              <span className="leading-relaxed">{text}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="bg-blue-950/40 border border-blue-800/50 rounded-lg p-3 text-xs text-blue-300 leading-relaxed">
+        <strong>Tip:</strong> Once connected, the device gets a <code className="font-mono">100.x.x.x</code> IP.
+        All devices on the same Headscale server can reach each other using those IPs or MagicDNS names.
+      </div>
+    </div>
+  );
+}
+
 export function AddDeviceModal({ onClose }: Props) {
   const { data: users = [] } = useUsers();
   const { data: config } = useHeadscaleConfig();
@@ -135,7 +202,7 @@ export function AddDeviceModal({ onClose }: Props) {
     setStep('commands');
   };
 
-  const commandsByPlatform: Record<Platform, string> = {
+  const commandsByPlatform: Record<Exclude<Platform, 'mobile'>, string> = {
     linux: linuxCommands(loginServer, generatedKey),
     macos: macosCommands(loginServer, generatedKey),
     windows: windowsCommands(loginServer, generatedKey),
@@ -228,21 +295,28 @@ export function AddDeviceModal({ onClose }: Props) {
 
               {/* Platform tabs */}
               <div>
-                <div className="flex gap-1 border-b border-gray-700">
-                  <PlatformTab id="linux"   label="Linux"   icon={Terminal} active={platform === 'linux'}   onClick={() => setPlatform('linux')} />
-                  <PlatformTab id="macos"   label="macOS"   icon={Apple}    active={platform === 'macos'}   onClick={() => setPlatform('macos')} />
-                  <PlatformTab id="windows" label="Windows" icon={Monitor}  active={platform === 'windows'} onClick={() => setPlatform('windows')} />
+                <div className="flex gap-1 border-b border-gray-700 flex-wrap">
+                  <PlatformTab id="linux"   label="Linux"   icon={Terminal}    active={platform === 'linux'}   onClick={() => setPlatform('linux')} />
+                  <PlatformTab id="macos"   label="macOS"   icon={Apple}       active={platform === 'macos'}   onClick={() => setPlatform('macos')} />
+                  <PlatformTab id="windows" label="Windows" icon={Monitor}     active={platform === 'windows'} onClick={() => setPlatform('windows')} />
+                  <PlatformTab id="mobile"  label="Mobile"  icon={Smartphone}  active={platform === 'mobile'}  onClick={() => setPlatform('mobile')} />
                 </div>
                 <div className="pt-4">
-                  <CodeBlock code={commandsByPlatform[platform]} />
+                  {platform === 'mobile' ? (
+                    <MobileInstructions loginServer={loginServer} />
+                  ) : (
+                    <CodeBlock code={commandsByPlatform[platform as Exclude<Platform, 'mobile'>]} />
+                  )}
                 </div>
               </div>
 
-              {/* Docker tab */}
-              <div>
-                <p className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Docker (any platform)</p>
-                <CodeBlock code={dockerCommand(loginServer, generatedKey)} />
-              </div>
+              {/* Docker — only shown for non-mobile platforms */}
+              {platform !== 'mobile' && (
+                <div>
+                  <p className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Docker (any platform)</p>
+                  <CodeBlock code={dockerCommand(loginServer, generatedKey)} />
+                </div>
+              )}
             </>
           )}
         </div>

@@ -57,10 +57,11 @@ fi
 # ── Mode selection ────────────────────────────────────────────────────────────
 step "Deployment mode"
 echo ""
-echo -e "  ${BOLD}1) Development${RESET}  — local machine, no SSL, Headscale on localhost"
-echo -e "  ${BOLD}2) Production${RESET}   — VPS with a domain, automatic HTTPS via Let's Encrypt"
+echo -e "  ${BOLD}1) Development${RESET}       — local machine, no SSL, Headscale on localhost"
+echo -e "  ${BOLD}2) Production${RESET}        — VPS with a domain, automatic HTTPS via Let's Encrypt"
+echo -e "  ${BOLD}3) Cloudflare Tunnel${RESET} — no VPS needed, expose via a free Cloudflare tunnel"
 echo ""
-read -rp "  Select [1/2]: " MODE
+read -rp "  Select [1/2/3]: " MODE
 MODE="${MODE:-1}"
 
 # ── Admin credentials (common) ────────────────────────────────────────────────
@@ -159,6 +160,112 @@ if [[ "$MODE" == "1" ]]; then
   echo -e "  Username  → ${CYAN}${ADMIN_USERNAME}${RESET}"
   echo ""
   echo -e "${DIM}To add devices:  tailscale up --login-server http://localhost:8080 --authkey <key>${RESET}"
+  exit 0
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CLOUDFLARE TUNNEL MODE
+# ═════════════════════════════════════════════════════════════════════════════
+if [[ "$MODE" == "3" ]]; then
+  step "Cloudflare Tunnel configuration"
+  echo ""
+  echo -e "  ${DIM}You need a free Cloudflare account and a domain added to it.${RESET}"
+  echo ""
+  echo -e "  ${BOLD}Step-by-step (one-time in Cloudflare dashboard):${RESET}"
+  echo -e "  ${DIM}1. Go to dash.cloudflare.com → Zero Trust → Networks → Tunnels${RESET}"
+  echo -e "  ${DIM}2. Create a tunnel → give it any name → copy the token shown${RESET}"
+  echo -e "  ${DIM}3. Add two Public Hostnames in the tunnel config:${RESET}"
+  echo -e "  ${DIM}     hs.yourdomain.com    → http://headscale:8080   (enable WebSocket)${RESET}"
+  echo -e "  ${DIM}     admin.yourdomain.com → http://tailui-frontend:80${RESET}"
+  echo ""
+
+  read -rp "  Paste your Cloudflare Tunnel token: " CF_TUNNEL_TOKEN
+  while [[ -z "$CF_TUNNEL_TOKEN" ]]; do
+    err "Token cannot be empty."
+    read -rp "  Paste your Cloudflare Tunnel token: " CF_TUNNEL_TOKEN
+  done
+
+  read -rp "  Headscale hostname (e.g. hs.example.com): " HEADSCALE_DOMAIN
+  while [[ -z "$HEADSCALE_DOMAIN" ]]; do
+    err "Domain cannot be empty."
+    read -rp "  Headscale hostname: " HEADSCALE_DOMAIN
+  done
+
+  read -rp "  TailUI hostname    (e.g. admin.example.com): " TAILUI_DOMAIN
+  while [[ -z "$TAILUI_DOMAIN" ]]; do
+    err "Domain cannot be empty."
+    read -rp "  TailUI hostname: " TAILUI_DOMAIN
+  done
+
+  # Update headscale config with HTTPS domain
+  if [[ -f headscale/config.yaml ]]; then
+    sed -i "s|^server_url:.*|server_url: https://${HEADSCALE_DOMAIN}|" headscale/config.yaml
+    ok "headscale/config.yaml updated (server_url → https://${HEADSCALE_DOMAIN})."
+  else
+    warn "headscale/config.yaml not found — set server_url manually."
+  fi
+
+  # Write .env
+  step "Writing .env"
+  {
+    echo "HEADSCALE_URL=http://headscale:8080"
+    echo "HEADSCALE_PUBLIC_URL=https://${HEADSCALE_DOMAIN}"
+    echo "TAILUI_PUBLIC_URL=https://${TAILUI_DOMAIN}"
+    echo "HEADSCALE_DOMAIN=${HEADSCALE_DOMAIN}"
+    echo "TAILUI_DOMAIN=${TAILUI_DOMAIN}"
+    echo "CF_TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}"
+    echo "HEADSCALE_API_KEY="
+    echo "ADMIN_USERNAME=${ADMIN_USERNAME}"
+    printf 'ADMIN_PASSWORD_HASH_B64=%s\n' "$(printf '%s' "${ADMIN_PASSWORD_HASH}" | base64 -w0)"
+    printf 'SESSION_SECRET=%s\n' "${SESSION_SECRET}"
+    echo "PORT=3001"
+    echo "NODE_ENV=production"
+    echo "LOG_LEVEL=warn"
+  } > .env
+  ok ".env written."
+
+  COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.tunnel.yml"
+
+  step "Building and starting services"
+  docker compose $COMPOSE_FILES up -d --build
+
+  # Wait for Headscale and generate API key
+  echo "  Waiting for Headscale to start…"
+  for i in $(seq 1 30); do
+    if docker exec tailui-headscale headscale version &>/dev/null 2>&1; then break; fi
+    sleep 2
+  done
+  API_KEY="$(docker exec tailui-headscale headscale apikeys create --expiration 365d 2>/dev/null)"
+  if [[ -n "$API_KEY" ]]; then
+    sed -i "s|^HEADSCALE_API_KEY=.*|HEADSCALE_API_KEY=${API_KEY}|" .env
+    docker compose $COMPOSE_FILES up -d tailui-backend 2>/dev/null
+    ok "API key generated and saved."
+  else
+    warn "Could not auto-generate API key. Run manually:"
+    echo "    docker exec tailui-headscale headscale apikeys create --expiration 365d"
+    echo "  Then update HEADSCALE_API_KEY in .env and restart the backend."
+  fi
+
+  echo ""
+  echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════════════╗${RESET}"
+  echo -e "${GREEN}${BOLD}║          TailUI is running via Cloudflare Tunnel!        ║${RESET}"
+  echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════╝${RESET}"
+  echo ""
+  echo -e "  TailUI dashboard → ${CYAN}https://${TAILUI_DOMAIN}${RESET}"
+  echo -e "  Headscale server → ${CYAN}https://${HEADSCALE_DOMAIN}${RESET}"
+  echo -e "  Username         → ${CYAN}${ADMIN_USERNAME}${RESET}"
+  echo ""
+  echo -e "${BOLD}Notes:${RESET}"
+  echo -e "  ${YELLOW}⚠${RESET}  Enable WebSocket support on the ${HEADSCALE_DOMAIN} tunnel route"
+  echo -e "     in the Cloudflare dashboard (required for Headscale control plane)."
+  echo -e "  ${DIM}WireGuard direct connections (UDP 41641) don't go through Cloudflare tunnels.${RESET}"
+  echo -e "  ${DIM}Devices will use DERP relay over HTTPS — fully functional but slightly higher latency.${RESET}"
+  echo -e "  ${DIM}For best performance, also open UDP 41641 on your host firewall.${RESET}"
+  echo ""
+  echo -e "${BOLD}Add devices:${RESET}"
+  echo -e "  ${DIM}tailscale up --login-server https://${HEADSCALE_DOMAIN} --authkey <key>${RESET}"
+  echo ""
+  echo -e "${YELLOW}Keep .env secure — it contains your tunnel token, API key and session secret.${RESET}"
   exit 0
 fi
 
