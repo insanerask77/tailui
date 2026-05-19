@@ -1,0 +1,31 @@
+services:
+  tailui-backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - hs-net
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.4"
+
+  tailui-frontend:
+    build: ./frontend
+    restart: unless-stopped
+    networks:
+      - hs-net
+    depends_on:
+      - tailui-backend
+    ports:
+      - "5173:80"
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.2"
+
+networks:
+  hs-net:
+    external: true
