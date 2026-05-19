@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import { authRoutes } from './auth/routes';
 import { authGuard } from './middleware/authGuard';
+import { overviewRoutes } from './routes/overview';
+import { getDb } from './db';
 
 const app = Fastify({
   logger: process.env.LOG_LEVEL === 'warn'
@@ -9,8 +11,12 @@ const app = Fastify({
     : { level: 'info' },
 });
 
+// initialise SQLite on startup
+getDb();
+
 app.register(cookie);
 app.register(authRoutes);
+app.register(overviewRoutes);
 
 app.addHook('preHandler', async (req, reply) => {
   if (req.url.startsWith('/api/')) {
