@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+export { useUsers } from './users';
 
 export interface NodeUser {
   id: string;
   name: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface NodeRow {
@@ -38,16 +39,3 @@ export function useNodes() {
   });
 }
 
-async function fetchUsers(): Promise<NodeUser[]> {
-  const res = await fetch('/api/users');
-  if (!res.ok) return [];
-  return res.json() as Promise<NodeUser[]>;
-}
-
-export function useUsers() {
-  return useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-    staleTime: 60_000,
-  });
-}

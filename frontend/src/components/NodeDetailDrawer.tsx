@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Clock, User, Tag, Wifi, WifiOff, AlertCircle, Edit2, Check, Shield } from 'lucide-react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import type { NodeRow } from '../api/nodes';
+import { useUsers } from '../api/users';
 import { toast } from '../stores/toastStore';
 
 interface Props {
@@ -22,6 +23,15 @@ async function patchNode(id: string, body: object) {
 
 async function expireNode(id: string) {
   const res = await fetch(`/api/nodes/${id}/expire`, { method: 'POST' });
+  if (!res.ok) throw new Error((await res.json() as { error: string }).error);
+}
+
+async function moveNode(id: string, user: string) {
+  const res = await fetch(`/api/nodes/${id}/user`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user }),
+  });
   if (!res.ok) throw new Error((await res.json() as { error: string }).error);
 }
 
@@ -47,8 +57,12 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
   const qc = useQueryClient();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const { data: users } = useUsers();
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['nodes'] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['nodes'] });
+    qc.invalidateQueries({ queryKey: ['users'] });
+  };
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => patchNode(id, { name }),
@@ -59,6 +73,12 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
   const expireMutation = useMutation({
     mutationFn: (id: string) => expireNode(id),
     onSuccess: () => { toast.success('Node expired'); invalidate(); },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  const moveMutation = useMutation({
+    mutationFn: ({ id, user }: { id: string; user: string }) => moveNode(id, user),
+    onSuccess: (_, { user }) => { toast.success(`Node moved to "${user}"`); invalidate(); },
     onError: (e) => toast.error((e as Error).message),
   });
 
@@ -157,6 +177,29 @@ export function NodeDetailDrawer({ node, open, onClose, onDeleteRequest }: Props
               <User size={14} className="text-gray-400" />
               <span className="text-sm text-white">{node.user.name}</span>
             </div>
+            {users && users.length > 1 && (
+              <div className="mt-2">
+                <select
+                  value={node.user.name}
+                  disabled={moveMutation.isPending}
+                  onChange={(e) => {
+                    if (e.target.value !== node.user.name) {
+                      moveMutation.mutate({ id: node.id, user: e.target.value });
+                    }
+                  }}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs
+                             text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500
+                             disabled:opacity-50 cursor-pointer"
+                >
+                  {users.map((u) => (
+                    <option key={u.id} value={u.name}>{u.name}</option>
+                  ))}
+                </select>
+                {moveMutation.isPending && (
+                  <p className="text-xs text-gray-500 mt-1">Moving…</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Tags */}

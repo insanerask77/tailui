@@ -9,6 +9,7 @@ import { AppLayout } from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import NodesPage from './pages/NodesPage';
+import UsersPage from './pages/UsersPage';
 import { useAuthStore } from './stores/authStore';
 
 const rootRoute = createRootRoute({
@@ -60,7 +61,7 @@ const nodesRoute = createRoute({
 const usersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/users',
-  component: () => <ComingSoon name="Users" />,
+  component: UsersPage,
 });
 const authkeysRoute = createRoute({
   getParentRoute: () => authenticatedRoute,

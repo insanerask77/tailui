@@ -107,10 +107,16 @@ export async function nodeRoutes(app: FastifyInstance) {
     }
   });
 
-  // ── Users (for filter dropdown) ───────────────────────────────────────
-  app.get('/api/users', async (_req, reply) => {
+  // ── Move node to different user ───────────────────────────────────────
+  app.put('/api/nodes/:id/user', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const { user } = req.body as { user?: string };
+    if (!user) return reply.code(400).send({ error: 'user is required' });
+    const by = await actor(req);
     try {
-      return await headscale.users.list();
+      const result = await headscale.nodes.move(id, user);
+      auditLog('node.move', by, `${id} → ${user}`);
+      return result;
     } catch (err) {
       return reply.code(502).send({ error: headscaleErr(err) });
     }
