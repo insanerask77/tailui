@@ -98,7 +98,13 @@ if [[ "$MODE" == "1" ]]; then
   step "Development configuration"
 
   HEADSCALE_URL="http://headscale:8080"
-  HEADSCALE_PUBLIC_URL="http://localhost:8080"
+
+  # Detect local IP for public URLs
+  LOCAL_IP="$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'localhost')"
+  echo -e "  ${DIM}Detected local IP: ${LOCAL_IP}${RESET}"
+  read -rp "  TailUI public URL [http://${LOCAL_IP}:5173]: " TAILUI_PUBLIC_URL
+  TAILUI_PUBLIC_URL="${TAILUI_PUBLIC_URL:-http://${LOCAL_IP}:5173}"
+  HEADSCALE_PUBLIC_URL="http://${LOCAL_IP}:8080"
 
   warn "In dev mode a temporary API key will be generated after Headscale starts."
   echo ""
@@ -110,6 +116,7 @@ if [[ "$MODE" == "1" ]]; then
   {
     echo "HEADSCALE_URL=${HEADSCALE_URL}"
     echo "HEADSCALE_PUBLIC_URL=${HEADSCALE_PUBLIC_URL}"
+    echo "TAILUI_PUBLIC_URL=${TAILUI_PUBLIC_URL}"
     echo "HEADSCALE_API_KEY="
     echo "ADMIN_USERNAME=${ADMIN_USERNAME}"
     printf 'ADMIN_PASSWORD_HASH_B64=%s\n' "$(printf '%s' "${ADMIN_PASSWORD_HASH}" | base64 -w0)"
@@ -265,6 +272,7 @@ step "Writing .env"
 {
   echo "HEADSCALE_URL=http://headscale:8080"
   echo "HEADSCALE_PUBLIC_URL=https://${HEADSCALE_DOMAIN}"
+  echo "TAILUI_PUBLIC_URL=https://${TAILUI_DOMAIN}"
   echo "HEADSCALE_DOMAIN=${HEADSCALE_DOMAIN}"
   echo "TAILUI_DOMAIN=${TAILUI_DOMAIN}"
   echo "ACME_EMAIL=${ACME_EMAIL}"
