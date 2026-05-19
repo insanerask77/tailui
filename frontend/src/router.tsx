@@ -11,6 +11,7 @@ import DashboardPage from './pages/DashboardPage';
 import NodesPage from './pages/NodesPage';
 import UsersPage from './pages/UsersPage';
 import AuthKeysPage from './pages/AuthKeysPage';
+import ApiKeysPage from './pages/ApiKeysPage';
 import { useAuthStore } from './stores/authStore';
 
 const rootRoute = createRootRoute({
@@ -72,7 +73,7 @@ const authkeysRoute = createRoute({
 const apikeysRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/apikeys',
-  component: () => <ComingSoon name="API Keys" />,
+  component: ApiKeysPage,
 });
 const routesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
