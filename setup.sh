@@ -88,16 +88,17 @@ bcrypt.hash('${ADMIN_PASSWORD}', 12).then(h => { process.stdout.write(h); });
 ")"
 
 # ── Write .env ───────────────────────────────────────────────────────────────
-cat > .env <<EOF
-HEADSCALE_URL=${HEADSCALE_URL}
-HEADSCALE_API_KEY=${HEADSCALE_API_KEY}
-ADMIN_USERNAME=${ADMIN_USERNAME}
-ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH}
-SESSION_SECRET=${SESSION_SECRET}
-PORT=3001
-NODE_ENV=production
-LOG_LEVEL=warn
-EOF
+# printf %s prevents bash from interpreting $ in bcrypt hashes and secrets
+{
+  echo "HEADSCALE_URL=${HEADSCALE_URL}"
+  echo "HEADSCALE_API_KEY=${HEADSCALE_API_KEY}"
+  echo "ADMIN_USERNAME=${ADMIN_USERNAME}"
+  printf 'ADMIN_PASSWORD_HASH=%s\n' "${ADMIN_PASSWORD_HASH}"
+  printf 'SESSION_SECRET=%s\n'      "${SESSION_SECRET}"
+  echo "PORT=3001"
+  echo "NODE_ENV=production"
+  echo "LOG_LEVEL=warn"
+} > .env
 
 echo -e "${GREEN}.env written.${RESET}"
 

@@ -1,0 +1,43 @@
+# Development override — adds a local Headscale instance.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# In production, remove this file and point HEADSCALE_URL to your existing instance.
+
+services:
+  headscale:
+    image: headscale/headscale:0.23.0
+    container_name: tailui-headscale
+    restart: unless-stopped
+    command: serve
+    volumes:
+      - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - headscale-data:/var/lib/headscale
+    networks:
+      - hs-net
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  tailui-backend:
+    depends_on:
+      headscale:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  tailui-frontend:
+    ports:
+      - "5173:80"
+
+volumes:
+  headscale-data:
+
+# Override: make hs-net a local network (not external) for dev
+networks:
+  hs-net:
+    external: false
+    name: hs-net

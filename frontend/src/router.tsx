@@ -8,6 +8,7 @@ import {
 import { AppLayout } from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import NodesPage from './pages/NodesPage';
 import { useAuthStore } from './stores/authStore';
 
 const rootRoute = createRootRoute({
@@ -54,7 +55,7 @@ function ComingSoon({ name }: { name: string }) {
 const nodesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/nodes',
-  component: () => <ComingSoon name="Nodes" />,
+  component: NodesPage,
 });
 const usersRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
