@@ -14,6 +14,7 @@ import AuthKeysPage from './pages/AuthKeysPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import RoutesPage from './pages/RoutesPage';
 import DnsPage from './pages/DnsPage';
+import AclPage from './pages/AclPage';
 import { useAuthStore } from './stores/authStore';
 
 const rootRoute = createRootRoute({
@@ -90,7 +91,7 @@ const dnsRoute = createRoute({
 const aclRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/acl',
-  component: () => <ComingSoon name="ACL" />,
+  component: AclPage,
 });
 
 const routeTree = rootRoute.addChildren([

@@ -62,5 +62,5 @@ export interface HsDnsConfig {
 
 export interface HsPolicy {
   policy: string;
-  updated_at: string;
+  updatedAt: string;
 }

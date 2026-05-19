@@ -9,6 +9,7 @@ import { authKeyRoutes } from './routes/authkeys';
 import { apiKeyRoutes } from './routes/apikeys';
 import { routeRoutes } from './routes/routes';
 import { dnsRoutes } from './routes/dns';
+import { policyRoutes } from './routes/policy';
 import { getDb } from './db';
 
 const app = Fastify({
@@ -28,6 +29,7 @@ app.register(authKeyRoutes);
 app.register(apiKeyRoutes);
 app.register(routeRoutes);
 app.register(dnsRoutes);
+app.register(policyRoutes);
 
 app.addHook('preHandler', async (req, reply) => {
   if (req.url.startsWith('/api/')) {
