@@ -28,8 +28,8 @@ export interface HsPreAuthKey {
   ephemeral: boolean;
   used: boolean;
   expiration: string;
-  created_at: string;
-  acl_tags: string[];
+  createdAt: string;
+  aclTags: string[];
 }
 
 export interface HsRoute {
