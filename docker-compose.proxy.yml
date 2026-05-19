@@ -1,0 +1,23 @@
+# Proxy bypass override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.proxy.yml up -d
+#
+# The Docker daemon at this host has a corporate proxy configured
+# (http://192.168.1.12:3128) that Docker injects into all containers.
+# This override sets NO_PROXY so that inter-container traffic bypasses it.
+
+x-no-proxy: &no-proxy
+  NO_PROXY: "headscale,tailui-backend,tailui-frontend,localhost,127.0.0.1,::1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16,.hs-net"
+  no_proxy: "headscale,tailui-backend,tailui-frontend,localhost,127.0.0.1,::1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16,.hs-net"
+
+services:
+  headscale:
+    environment:
+      <<: *no-proxy
+
+  tailui-backend:
+    environment:
+      <<: *no-proxy
+
+  tailui-frontend:
+    environment:
+      <<: *no-proxy

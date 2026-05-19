@@ -11,11 +11,14 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const adminUser = process.env.ADMIN_USERNAME;
-    const adminHash = process.env.ADMIN_PASSWORD_HASH;
+    const rawHash = process.env.ADMIN_PASSWORD_HASH_B64
+      ? Buffer.from(process.env.ADMIN_PASSWORD_HASH_B64, 'base64').toString('utf8')
+      : process.env.ADMIN_PASSWORD_HASH;
 
-    if (!adminUser || !adminHash) {
+    if (!adminUser || !rawHash) {
       return reply.code(500).send({ error: 'Server misconfigured' });
     }
+    const adminHash = rawHash;
 
     const usernameMatch = username === adminUser;
     const passwordMatch = await bcrypt.compare(password, adminHash);

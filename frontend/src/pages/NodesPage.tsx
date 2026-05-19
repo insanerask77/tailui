@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   Search, Wifi, WifiOff, AlertCircle, Clock, Tag,
-  MoreVertical, Trash2, Timer, ChevronDown, ArrowUpRight,
+  MoreVertical, Trash2, Timer, ChevronDown, ArrowUpRight, Plus,
 } from 'lucide-react';
 import { useNodes, useUsers, type NodeRow } from '../api/nodes';
 import { useRoutes, useExitNodeIds } from '../api/routes';
 import { Skeleton } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { NodeDetailDrawer } from '../components/NodeDetailDrawer';
+import { AddDeviceModal } from '../components/AddDeviceModal';
 import { toast } from '../stores/toastStore';
 
 type StatusFilter = 'all' | 'online' | 'offline' | 'expired';
@@ -131,6 +132,7 @@ export default function NodesPage() {
   const [selected, setSelected]       = useState<Set<string>>(new Set());
   const [drawerNode, setDrawerNode]   = useState<NodeRow | null>(null);
   const [drawerOpen, setDrawerOpen]   = useState(false);
+  const [addDeviceOpen, setAddDeviceOpen] = useState(false);
   const [confirm, setConfirm]         = useState<{ type: 'delete' | 'expire' | 'bulk-delete' | 'bulk-expire'; ids: string[] } | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['nodes'] });
@@ -205,11 +207,20 @@ export default function NodesPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-white">Nodes</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          {isLoading ? 'Loading…' : `${counts.total} nodes · ${counts.online} online`}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-white">Nodes</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {isLoading ? 'Loading…' : `${counts.total} nodes · ${counts.online} online`}
+          </p>
+        </div>
+        <button
+          onClick={() => setAddDeviceOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add device
+        </button>
       </div>
 
       {/* Bulk toolbar */}
@@ -425,6 +436,7 @@ export default function NodesPage() {
         onConfirm={confirmAction}
         onCancel={() => setConfirm(null)}
       />
+      {addDeviceOpen && <AddDeviceModal onClose={() => setAddDeviceOpen(false)} />}
     </div>
   );
 }

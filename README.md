@@ -42,33 +42,64 @@ git clone <this-repo> tailui
 cd tailui
 ```
 
-### 2. Generate a Headscale API key
-
-```bash
-# Replace <container> with your headscale container name
-docker exec -it <headscale-container> headscale apikeys create --expiration 365d
-```
-
-### 3. Run the setup wizard
+### 2. Run the setup wizard
 
 ```bash
 bash setup.sh
 ```
 
-The wizard will:
-1. Ask for your Headscale API key
-2. Ask for admin username (default: `admin`) and password
-3. Generate a cryptographically secure session secret
-4. Write `.env` with sensible defaults
-5. Run `docker compose up -d --build`
+The wizard asks whether you want **development** or **production** mode.
 
-### 4. Open the dashboard
+#### Development mode
+Spins up a local Headscale instance alongside TailUI — no domain or SSL needed. Good for testing.
 
+#### Production mode (VPS + custom domain)
+Full guided setup:
+1. Asks for two subdomains (Headscale + TailUI)
+2. Asks for Let's Encrypt email
+3. Detects public IP and patches `headscale/config.yaml`
+4. Generates a `Caddyfile` for automatic HTTPS
+5. Prints firewall rules to run
+6. Checks DNS propagation
+7. Builds and starts all containers
+8. Auto-generates the Headscale API key
+
+### 3. Open the dashboard
+
+- **Production:** `https://admin.your-domain.com`
+- **Development:** `http://localhost:5173`
+
+## Production: DNS & ports
+
+### DNS records (two A records, same IP)
+
+| Record | Points to |
+|--------|-----------|
+| `hs.example.com` | VPS public IP |
+| `admin.example.com` | VPS public IP |
+
+### Firewall ports
+
+| Port | Protocol | Required | Purpose |
+|------|----------|----------|---------|
+| 80 | TCP | ✅ | HTTP → HTTPS redirect + Let's Encrypt |
+| 443 | TCP | ✅ | HTTPS — Headscale control plane + TailUI |
+| 443 | UDP | Optional | HTTP/3 |
+| 41641 | UDP | Recommended | WireGuard direct connections (bypasses DERP relay) |
+| 3478 | UDP | Optional | STUN — NAT traversal |
+
+> Without 41641/udp, all VPN traffic goes through the embedded DERP relay (higher latency). Open it for the best performance.
+
+```bash
+# UFW
+ufw allow 80/tcp && ufw allow 443 && ufw allow 41641/udp && ufw allow 3478/udp && ufw reload
 ```
-http://your-server-ip
-```
 
-Log in with the credentials you chose in step 3.
+### Clients connect with
+
+```bash
+tailscale up --login-server https://hs.example.com --authkey <key>
+```
 
 ## Configuration Reference
 
