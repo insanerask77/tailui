@@ -10,4 +10,15 @@ export default defineConfig({
       '/auth': 'http://localhost:3001',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['@tanstack/react-router', '@tanstack/react-query'],
+          editor: ['@uiw/react-codemirror', '@codemirror/lang-json', '@codemirror/theme-one-dark'],
+        },
+      },
+    },
+  },
 });

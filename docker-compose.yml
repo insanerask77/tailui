@@ -3,8 +3,20 @@ services:
     build: ./backend
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Path inside the container where headscale config is mounted (enables DNS page)
+      HEADSCALE_CONFIG_PATH: /etc/headscale/config.yaml
+    volumes:
+      # Mount headscale config read/write so the DNS page can update it
+      - ./headscale/config.yaml:/etc/headscale/config.yaml
     networks:
       - hs-net
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -17,9 +29,10 @@ services:
     networks:
       - hs-net
     depends_on:
-      - tailui-backend
+      tailui-backend:
+        condition: service_healthy
     ports:
-      - "5173:80"
+      - "80:80"
     deploy:
       resources:
         limits:

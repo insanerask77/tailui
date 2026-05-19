@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     command: serve
     volumes:
-      - ./headscale/config.yaml:/etc/headscale/config.yaml:ro
+      - ./headscale/config.yaml:/etc/headscale/config.yaml
       - headscale-data:/var/lib/headscale
     networks:
       - hs-net
