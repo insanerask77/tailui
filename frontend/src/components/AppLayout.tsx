@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useRouter } from '@tanstack/react-router';
+import { ToastContainer } from './ToastContainer';
 
 const NAV_ITEMS = [
   { to: '/',         label: 'Dashboard', icon: LayoutDashboard },
@@ -85,6 +86,8 @@ export function AppLayout() {
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
+
+      <ToastContainer />
     </div>
   );
 }
