@@ -6,6 +6,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useRouter } from '@tanstack/react-router';
 import { ToastContainer } from './ToastContainer';
+import { useNodeSSE } from '../hooks/useNodeSSE';
 
 const NAV_ITEMS = [
   { to: '/',         label: 'Dashboard', icon: LayoutDashboard },
@@ -23,6 +24,7 @@ export function AppLayout() {
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useNodeSSE();
 
   async function handleLogout() {
     await logout();

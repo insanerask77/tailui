@@ -10,6 +10,8 @@ import { apiKeyRoutes } from './routes/apikeys';
 import { routeRoutes } from './routes/routes';
 import { dnsRoutes } from './routes/dns';
 import { policyRoutes } from './routes/policy';
+import { eventRoutes } from './routes/events';
+import * as broadcaster from './sse/broadcaster';
 import { getDb } from './db';
 
 const app = Fastify({
@@ -19,6 +21,7 @@ const app = Fastify({
 });
 
 getDb();
+broadcaster.start();
 
 app.register(cookie);
 app.register(authRoutes);
@@ -30,6 +33,7 @@ app.register(apiKeyRoutes);
 app.register(routeRoutes);
 app.register(dnsRoutes);
 app.register(policyRoutes);
+app.register(eventRoutes);
 
 app.addHook('preHandler', async (req, reply) => {
   if (req.url.startsWith('/api/')) {
