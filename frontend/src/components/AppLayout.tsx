@@ -1,7 +1,7 @@
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
 import {
   LayoutDashboard, Server, Users, Key, KeyRound,
-  Network, Globe, ShieldCheck, LogOut,
+  Network, Globe, ShieldCheck, LogOut, UserCog,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useRouter } from '@tanstack/react-router';
@@ -19,11 +19,16 @@ const NAV_ITEMS = [
   { to: '/acl',      label: 'ACL',       icon: ShieldCheck },
 ] as const;
 
+const ADMIN_ITEMS = [
+  { to: '/admin/users', label: 'Accounts', icon: UserCog },
+] as const;
+
 export function AppLayout() {
-  const username = useAuthStore((s) => s.username);
-  const logout = useAuthStore((s) => s.logout);
-  const router = useRouter();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const username  = useAuthStore((s) => s.username);
+  const role      = useAuthStore((s) => s.role);
+  const logout    = useAuthStore((s) => s.logout);
+  const router    = useRouter();
+  const pathname  = useRouterState({ select: (s) => s.location.pathname });
   useNodeSSE();
 
   async function handleLogout() {
@@ -31,9 +36,23 @@ export function AppLayout() {
     router.navigate({ to: '/login' });
   }
 
+  const isActive = (to: string) => to === '/' ? pathname === '/' : pathname.startsWith(to);
+
+  const navLink = (to: string, label: string, Icon: React.ElementType) => {
+    const active = isActive(to);
+    return (
+      <Link key={to} to={to}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+          active ? 'bg-gray-800 text-white font-medium' : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+        }`}>
+        <Icon size={16} />
+        {label}
+      </Link>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
-      {/* Sidebar */}
       <aside className="w-56 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col">
         {/* Logo */}
         <div className="h-14 flex items-center px-5 border-b border-gray-800">
@@ -47,23 +66,16 @@ export function AppLayout() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
-            const active = pathname === to;
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  active
-                    ? 'bg-gray-800 text-white font-medium'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
-                }`}
-              >
-                <Icon size={16} />
-                {label}
-              </Link>
-            );
-          })}
+          {NAV_ITEMS.map(({ to, label, icon: Icon }) => navLink(to, label, Icon))}
+
+          {role === 'admin' && (
+            <>
+              <div className="pt-4 pb-1 px-3">
+                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Admin</span>
+              </div>
+              {ADMIN_ITEMS.map(({ to, label, icon: Icon }) => navLink(to, label, Icon))}
+            </>
+          )}
         </nav>
 
         {/* User */}
@@ -72,19 +84,17 @@ export function AppLayout() {
             <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold">
               {username?.[0]?.toUpperCase() ?? 'A'}
             </div>
-            <span className="text-sm text-gray-300 truncate flex-1">{username}</span>
-            <button
-              onClick={handleLogout}
-              className="text-gray-500 hover:text-gray-200 transition-colors"
-              title="Sign out"
-            >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-300 truncate">{username}</p>
+              {role && <p className="text-xs text-gray-600 capitalize">{role}</p>}
+            </div>
+            <button onClick={() => void handleLogout()} className="text-gray-500 hover:text-gray-200 transition-colors" title="Sign out">
               <LogOut size={15} />
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>

@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { AppLayout } from './components/AppLayout';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import NodesPage from './pages/NodesPage';
 import UsersPage from './pages/UsersPage';
@@ -15,11 +16,10 @@ import ApiKeysPage from './pages/ApiKeysPage';
 import RoutesPage from './pages/RoutesPage';
 import DnsPage from './pages/DnsPage';
 import AclPage from './pages/AclPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import { useAuthStore } from './stores/authStore';
 
-const rootRoute = createRootRoute({
-  component: () => <Outlet />,
-});
+const rootRoute = createRootRoute({ component: () => <Outlet /> });
 
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -27,91 +27,46 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
-// Layout route: checks auth once for all child routes
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register/$token',
+  component: RegisterPage,
+});
+
 const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: '_authenticated',
   beforeLoad: async () => {
     const res = await fetch('/auth/me');
     if (!res.ok) throw redirect({ to: '/login' });
-    const data = await res.json() as { username: string };
-    // sync into Zustand store
-    useAuthStore.getState().setUser(data.username);
-    return { username: data.username };
+    const data = await res.json() as { username: string; role: 'admin' | 'user'; namespace: string | null };
+    useAuthStore.getState().setUser(data);
+    return data;
   },
   component: AppLayout,
 });
 
-const indexRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/',
-  component: DashboardPage,
-});
-
-// Placeholder routes for future phases — redirect to root for now
-function ComingSoon({ name }: { name: string }) {
-  return (
-    <div className="p-8">
-      <h1 className="text-xl font-semibold text-white mb-2">{name}</h1>
-      <p className="text-gray-400 text-sm">Coming in a future phase.</p>
-    </div>
-  );
-}
-
-const nodesRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/nodes',
-  component: NodesPage,
-});
-const usersRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/users',
-  component: UsersPage,
-});
-const authkeysRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/authkeys',
-  component: AuthKeysPage,
-});
-const apikeysRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/apikeys',
-  component: ApiKeysPage,
-});
-const routesRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/routes',
-  component: RoutesPage,
-});
-const dnsRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/dns',
-  component: DnsPage,
-});
-const aclRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/acl',
-  component: AclPage,
-});
+const indexRoute      = createRoute({ getParentRoute: () => authenticatedRoute, path: '/', component: DashboardPage });
+const nodesRoute      = createRoute({ getParentRoute: () => authenticatedRoute, path: '/nodes', component: NodesPage });
+const usersRoute      = createRoute({ getParentRoute: () => authenticatedRoute, path: '/users', component: UsersPage });
+const authkeysRoute   = createRoute({ getParentRoute: () => authenticatedRoute, path: '/authkeys', component: AuthKeysPage });
+const apikeysRoute    = createRoute({ getParentRoute: () => authenticatedRoute, path: '/apikeys', component: ApiKeysPage });
+const routesRoute     = createRoute({ getParentRoute: () => authenticatedRoute, path: '/routes', component: RoutesPage });
+const dnsRoute        = createRoute({ getParentRoute: () => authenticatedRoute, path: '/dns', component: DnsPage });
+const aclRoute        = createRoute({ getParentRoute: () => authenticatedRoute, path: '/acl', component: AclPage });
+const adminUsersRoute = createRoute({ getParentRoute: () => authenticatedRoute, path: '/admin/users', component: AdminUsersPage });
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  registerRoute,
   authenticatedRoute.addChildren([
-    indexRoute,
-    nodesRoute,
-    usersRoute,
-    authkeysRoute,
-    apikeysRoute,
-    routesRoute,
-    dnsRoute,
-    aclRoute,
+    indexRoute, nodesRoute, usersRoute, authkeysRoute, apikeysRoute,
+    routesRoute, dnsRoute, aclRoute, adminUsersRoute,
   ]),
 ]);
 
 export const router = createRouter({ routeTree });
 
 declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
+  interface Register { router: typeof router; }
 }

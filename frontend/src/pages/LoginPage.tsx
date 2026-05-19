@@ -27,7 +27,9 @@ export default function LoginPage() {
         return;
       }
 
-      setUser(username);
+      const meRes = await fetch('/auth/me');
+      const me = await meRes.json() as { username: string; role: 'admin' | 'user'; namespace: string | null };
+      setUser(me);
       router.navigate({ to: '/' });
     } catch {
       setError('Connection error — is the backend running?');

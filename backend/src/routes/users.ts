@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import * as headscale from '../headscale/client';
 import { auditLog } from '../db';
 import { verifyToken, COOKIE_NAME } from '../auth/jwt';
+import { scopeNamespace } from '../middleware/authGuard';
 
 async function actor(req: FastifyRequest): Promise<string> {
   try {
@@ -19,7 +20,8 @@ const NAME_RE = /^[a-z0-9][a-z0-9-]*$/;
 
 export async function userRoutes(app: FastifyInstance) {
   // ── List (with nodeCount) ─────────────────────────────────────────────
-  app.get('/api/users', async (_req, reply) => {
+  app.get('/api/users', async (req, reply) => {
+    const ns = scopeNamespace(req);
     try {
       const [userList, nodeList] = await Promise.all([
         headscale.users.list(),
@@ -29,7 +31,8 @@ export async function userRoutes(app: FastifyInstance) {
         acc[n.user.name] = (acc[n.user.name] ?? 0) + 1;
         return acc;
       }, {});
-      return userList.map((u) => ({ ...u, nodeCount: countMap[u.name] ?? 0 }));
+      const filtered = ns ? userList.filter(u => u.name === ns) : userList;
+      return filtered.map((u) => ({ ...u, nodeCount: countMap[u.name] ?? 0 }));
     } catch (err) {
       return reply.code(502).send({ error: headscaleErr(err) });
     }

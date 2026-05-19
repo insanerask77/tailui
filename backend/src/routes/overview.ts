@@ -1,9 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import * as headscale from '../headscale/client';
 import { recentAuditEvents } from '../db';
+import { scopeNamespace } from '../middleware/authGuard';
 
 export async function overviewRoutes(app: FastifyInstance) {
-  app.get('/api/overview', async (_req, reply) => {
+  app.get('/api/overview', async (req, reply) => {
+    const ns = scopeNamespace(req);
     try {
       const [nodeList, userList, events] = await Promise.all([
         headscale.nodes.list(),
@@ -11,15 +13,14 @@ export async function overviewRoutes(app: FastifyInstance) {
         Promise.resolve(recentAuditEvents(10)),
       ]);
 
-      const nodesTotal = nodeList.length;
-      const nodesOnline = nodeList.filter(headscale.isOnline).length;
-      const usersCount = userList.length;
+      const nodes = ns ? nodeList.filter(n => n.user?.name === ns) : nodeList;
+      const users = ns ? userList.filter(u => u.name === ns) : userList;
 
       return {
-        nodesTotal,
-        nodesOnline,
-        nodesOffline: nodesTotal - nodesOnline,
-        usersCount,
+        nodesTotal:  nodes.length,
+        nodesOnline: nodes.filter(headscale.isOnline).length,
+        nodesOffline: nodes.filter(n => !headscale.isOnline(n)).length,
+        usersCount:  users.length,
         recentEvents: events,
       };
     } catch (err) {

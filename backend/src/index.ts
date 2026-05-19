@@ -12,6 +12,7 @@ import { dnsRoutes } from './routes/dns';
 import { policyRoutes } from './routes/policy';
 import { eventRoutes } from './routes/events';
 import { configRoutes } from './routes/config';
+import { adminRoutes } from './routes/admin';
 import * as broadcaster from './sse/broadcaster';
 import { getDb } from './db';
 
@@ -36,6 +37,7 @@ app.register(dnsRoutes);
 app.register(policyRoutes);
 app.register(eventRoutes);
 app.register(configRoutes);
+app.register(adminRoutes);
 
 app.addHook('preHandler', async (req, reply) => {
   if (req.url.startsWith('/api/')) {

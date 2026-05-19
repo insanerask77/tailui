@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import * as headscale from '../headscale/client';
 import { auditLog } from '../db';
 import { verifyToken, COOKIE_NAME } from '../auth/jwt';
+import { scopeNamespace } from '../middleware/authGuard';
 
 async function actor(req: FastifyRequest): Promise<string> {
   try {
@@ -16,11 +17,13 @@ function headscaleErr(err: unknown): string {
 }
 
 export async function authKeyRoutes(app: FastifyInstance) {
-  // ── List all keys across all users ────────────────────────────────────────
-  app.get('/api/authkeys', async (_req, reply) => {
+  // ── List keys (scoped by namespace for non-admin) ─────────────────────────
+  app.get('/api/authkeys', async (req, reply) => {
+    const ns = scopeNamespace(req);
     try {
       const userList = await headscale.users.list();
-      const keyLists = await Promise.all(userList.map((u) => headscale.preauthkeys.list(u.name)));
+      const filtered = ns ? userList.filter(u => u.name === ns) : userList;
+      const keyLists = await Promise.all(filtered.map((u) => headscale.preauthkeys.list(u.name)));
       return keyLists.flat();
     } catch (err) {
       return reply.code(502).send({ error: headscaleErr(err) });

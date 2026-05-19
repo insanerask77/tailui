@@ -3,6 +3,7 @@ import * as headscale from '../headscale/client';
 import type { HsNode } from '../headscale/types';
 import { auditLog } from '../db';
 import { verifyToken, COOKIE_NAME } from '../auth/jwt';
+import { scopeNamespace } from '../middleware/authGuard';
 
 async function actor(req: FastifyRequest): Promise<string> {
   try {
@@ -25,10 +26,12 @@ function headscaleErr(err: unknown): string {
 
 export async function nodeRoutes(app: FastifyInstance) {
   // ── List ──────────────────────────────────────────────────────────────
-  app.get('/api/nodes', async (_req, reply) => {
+  app.get('/api/nodes', async (req, reply) => {
+    const ns = scopeNamespace(req);
     try {
       const list = await headscale.nodes.list();
-      return list.map((n) => ({ ...n, online: headscale.isOnline(n), expired: isExpired(n) }));
+      const filtered = ns ? list.filter(n => n.user?.name === ns) : list;
+      return filtered.map((n) => ({ ...n, online: headscale.isOnline(n), expired: isExpired(n) }));
     } catch (err) {
       return reply.code(502).send({ error: headscaleErr(err) });
     }
